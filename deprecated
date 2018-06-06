@@ -1,0 +1,6 @@
+   for index, row in df1.iterrows():
+        print(len(str(row['CreditorReference'])))
+        if (len(str((row['CreditorReference']) == 16))):
+
+            df1.set_value(index, 'CreditorReference', '000' + str(row['CreditorReference']))
+            print(row['CreditorReference'])
