@@ -2,8 +2,8 @@ import pandas as pd
 import glob, os
 import eliminateNonDca
 
-processForBankruptcy = True
-eliminateCourtCode0 = True
+processForBankruptcy = False
+eliminateCourtCode0 = False
 import numpy as np
 
 def cleanSpanishLetter(input_string):
@@ -112,6 +112,8 @@ for file in files:
     df["CourtCode"] = ""
     if not (processForBankruptcy):
         df["ID"] = ""
+        df = df.loc[~df['Stage'].isin(['CONCURSO'])]
+
 
 
     for index, row in df.iterrows():
@@ -126,10 +128,11 @@ for file in files:
 
 
 
-    df1 = df.reindex(['CreditorReference', 'PresentedAmount', 'CreditRankBK', 'ID', 'RecognizedAmountBK',
-                     'RecognizedAmountLE','CourtCode', 'ProceedingNumber'], axis=1)
     if eliminateCourtCode0:
-        df1 = df1[df1.CourtCode != '0']
+        #df1 = df1[df1.CourtCode != 0]
+        df = df.loc[~df['CourtCode'].isin(['0'])]
+    df1 = df.reindex(['CreditorReference', 'PresentedAmount', 'CreditRankBK', 'ID', 'RecognizedAmountBK',
+                      'RecognizedAmountLE', 'CourtCode', 'ProceedingNumber'], axis=1)
 
     #print(list(df))
     new_filename = os.path.splitext(file)[0]
@@ -149,20 +152,14 @@ for file in files:
 #LegalActiviy header
 #CreditorReference,CourtCode,ProceedingNumber,Stage,Status,LastAction,LastActionDate,Impulse,ImpulseKind,ImpulseDate,Seizure,SeizureDate,SeizureKind,Comments
 
-    #df = pd.read_csv(file, sep=',', encoding='latin-1')
-
-    #columns_to_remove =['Purse', 'ProceedingAmount',  'CreditRankBK', 'RecognizedAmountBK', 'UpdatedClaimedAmount', 'SubrogationDate', 'SubrogationCopyDate' ]
-
-    # Eliminate bankruptcies
-    #df = df.loc[df['RecognizedAmountBK'].isin(['0'])]
-    #df["CourtCode"] = ""
-    #df.rename(columns={'ClientAccountNumber': 'CreditorReference'}, inplace=True)
-
     df2 = df.reindex(['CreditorReference','CourtCode','ProceedingNumber','Stage',
                      'Status','LastAction','LastActionDate','Impulse','ImpulseKind','ImpulseDate','Seizure','SeizureDate',
                      'SeizureKind','Comments'], axis=1)
 
-    df2 = df2[df2.LastAction != 'NO_DEFINIDO']
+    #df2 = df2[df2.LastAction != 'NO_DEFINIDO']
+    df2['LastActionDate'].replace('', np.nan, inplace=True)
+    df2.dropna(subset=['LastActionDate'], inplace=True)
+
 
     new_filename = os.path.splitext(file)[0]
     new_filename = new_filename.replace('Legal_', 'LegalActivity_')
