@@ -2,7 +2,7 @@ import pandas as pd
 import glob, os
 import eliminateNonDca
 
-processForBankruptcy = False
+processForBankruptcy = True
 eliminateCourtCode0 = False
 import numpy as np
 
@@ -34,13 +34,15 @@ def tryAnotherType(type):
         return 'JUZGADO_DE_PRIMERA_INSTANCIA_E_INSTRUCCIÓN'
 
 
-
 def searchForCourtCode(cType, cNumber, cLocation):
     #print(cLocation)
     cLocation = cleanSpanishLetter(cLocation).upper()
-    #print(cType + ' ' + str(cNumber) + ' ' + str(cLocation) )
-    in_same_location = (courtDict.loc[(courtDict['CourtLocation'] == (str(cLocation)).upper()   )])
+    #print(cType + ' ' + str(cNumber) + ' ' + str(cLocation))
+    in_same_location: object = (courtDict.loc[(courtDict['CourtLocation'] == (str(cLocation)).upper())])
+    #print(in_same_location)
     same_type = in_same_location.loc[(in_same_location['CourtType'] == cType)]
+    #print(cType)
+    #print('insame:',in_same_location['CourtType'])
     if not (same_type["CourtCode"].values.any()):
         same_type = in_same_location.loc[(in_same_location['CourtType'] == tryAnotherType(cType))]
     same_number = same_type.loc[(same_type['CourtNumber'] == cNumber)]
@@ -96,7 +98,7 @@ print(files)
 courtDict = pd.read_csv('CourtCodes.csv', sep=',', encoding='latin-1', dtype={'CourtNumber': object, 'CourtCode': object})
 courtDict_v3 = pd.read_csv('CourtCodes_v3.csv', sep=',', encoding='latin-1', dtype={'CourtNumber': object, 'CourtCode': object})
 courtDict_v4 = pd.read_csv('CourtCodes_v4.csv', sep=',', encoding='latin-1', dtype={'CourtNumber': object, 'CourtCode': object})
-
+#print(courtDict)
 for file in files:
     recordCounter = 0
     legalErrorCounter = 0
@@ -175,4 +177,4 @@ for file in files:
 
 
 
-#searchForCourtCode('JUZGADO_DE_PRIMERA_INSTANCIA_E_INSTRUCCIÓN','001','AMURRIO')
+#searchForCourtCode('JUZGADO_DE_PRIMERA_INSTANCIA_E_INSTRUCCIÓN','006','Molina de Segura')

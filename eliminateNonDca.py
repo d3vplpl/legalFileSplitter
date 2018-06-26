@@ -2,7 +2,7 @@ import pandas as pd
 import glob
 
 nonDca = pd.read_csv('NonDcaAccounts.csv', sep=',', encoding='latin-1', dtype={'AccountReference': object})
-
+correctedTypes = pd.read_csv('correctedCourtTypes.csv', sep=',', encoding='latin-1')
 
 #files = glob.glob('./legal_*.csv')
 #print(files)
