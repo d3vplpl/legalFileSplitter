@@ -1,10 +1,11 @@
 import pandas as pd
 import glob, os
 import eliminateNonDca
+import numpy as np
 
 processForBankruptcy = True
 eliminateCourtCode0 = False
-import numpy as np
+
 
 def cleanSpanishLetter(input_string):
     #print (input_string)
@@ -82,7 +83,7 @@ def searchForCourtCodeInYetAnotherDict(cType, cNumber, cLocation):
     cLocation = cleanSpanishLetter(cLocation).upper()
 
     #print(cType + ' ' + str(cNumber) + ' ' + str(cLocation) )
-    in_same_location = (courtDict_v4.loc[(courtDict_v4['CourtLocation'] == (str(cLocation)).upper()   )])
+    in_same_location = (courtDict_v4.loc[(courtDict_v4['CourtLocation'] == (str(cLocation)).upper())])
     same_type = in_same_location.loc[(in_same_location['CourtType'] == cType)]
     if not (same_type["CourtCode"].values.any()):
         same_type = in_same_location.loc[(in_same_location['CourtType'] == tryAnotherType(cType))]
@@ -112,23 +113,27 @@ for file in files:
     df.rename(columns={'ProceedingAmount': 'PresentedAmount'}, inplace=True)
     df.rename(columns={'UpdatedClaimedAmount': 'RecognizedAmountLE'}, inplace=True)
     df["CourtCode"] = ""
-    if not (processForBankruptcy):
+    if not processForBankruptcy:
         df["ID"] = ""
         df = df.loc[~df['Stage'].isin(['CONCURSO'])]
-
-
 
     for index, row in df.iterrows():
 
         if eliminateNonDca.isNonDca(row['CreditorReference']):
             df.drop(index, inplace=True)
             continue
-        df.set_value(index,'CourtCode', searchForCourtCode(row["CourtType"], row["CourtNumber"], row["CourtLocation"]))
+        if processForBankruptcy and eliminateNonDca.is_phase1(row['ID']):
+            df.drop(index, inplace=True)
+            continue
+        if processForBankruptcy and eliminateNonDca.is_duplicate(row['CreditorReference']):
+            df.drop(index, inplace=True)
+            #print('Dropping ', row['CreditorReference'])
+            continue
+
+        df.set_value(index, 'CourtCode', searchForCourtCode(row["CourtType"], row["CourtNumber"], row["CourtLocation"]))
 
 
         recordCounter = recordCounter + 1
-
-
 
     if eliminateCourtCode0:
         #df1 = df1[df1.CourtCode != 0]
@@ -147,20 +152,18 @@ for file in files:
     year_from_filename = date_from_filename[:4]
     new_filename = new_filename.split('_')[0] + '_' + new_filename.split('_')[1] + '_' + new_filename.split('_')[2] + '_' + day_from_filename + month_from_filename + year_from_filename
     new_filename = new_filename + '.csv'
-    #print('new filename: ' + new_filename)
     df1.to_csv(new_filename, index=False)
-    #print ('record:' + str(recordCounter))
-    #print ('errors:' + str(legalErrorCounter))
+
 #LegalActiviy header
 #CreditorReference,CourtCode,ProceedingNumber,Stage,Status,LastAction,LastActionDate,Impulse,ImpulseKind,ImpulseDate,Seizure,SeizureDate,SeizureKind,Comments
 
-    df2 = df.reindex(['CreditorReference','CourtCode','ProceedingNumber','Stage',
-                     'Status','LastAction','LastActionDate','Impulse','ImpulseKind','ImpulseDate','Seizure','SeizureDate',
-                     'SeizureKind','Comments'], axis=1)
+    df2 = df.reindex(['CreditorReference', 'CourtCode', 'ProceedingNumber', 'Stage',
+                     'Status', 'LastAction', 'LastActionDate', 'Impulse', 'ImpulseKind', 'ImpulseDate', 'Seizure',
+                      'SeizureDate', 'SeizureKind', 'Comments'], axis=1)
 
-    #df2 = df2[df2.LastAction != 'NO_DEFINIDO']
-    df2['LastActionDate'].replace('', np.nan, inplace=True)
-    df2.dropna(subset=['LastActionDate'], inplace=True)
+    #Eliminate emnty last action date
+    #df2['LastActionDate'].replace('', np.nan, inplace=True)
+    #df2.dropna(subset=['LastActionDate'], inplace=True)
 
 
     new_filename = os.path.splitext(file)[0]
@@ -174,7 +177,6 @@ for file in files:
     new_filename = new_filename.split('_')[0] + '_' + new_filename.split('_')[1] + '_' + new_filename.split('_')[2] + '_' + day_from_filename + month_from_filename + year_from_filename
     new_filename = new_filename + '.csv'
     df2.to_csv(new_filename, index=False)
-
 
 
 #searchForCourtCode('JUZGADO_DE_PRIMERA_INSTANCIA_E_INSTRUCCIÓN','006','Molina de Segura')
